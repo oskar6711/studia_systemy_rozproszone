@@ -185,6 +185,7 @@ class ServerThread(threading.Thread):
                         self.client_socket.send(
                             bytes(f'Uzytkownik nie istnieje, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"', 'utf-8'))
 
+                if not cancelled:
                     self.transfer_money(username, amount, target_username)
                     print(
                         f'{thread_name} | Uzytkownik {username} przelal {amount} zl do uzytkownika {target_username}')
@@ -253,6 +254,7 @@ class ServerThread(threading.Thread):
                         else:
                             new_pesel = tmp_new_pesel
 
+                    if not cancelled:
                         self.admin_add_user(
                             new_username, new_password, new_name, new_surname, new_pesel)
                         print(f'{thread_name} | Admin dodal nowego uzytkownika')
