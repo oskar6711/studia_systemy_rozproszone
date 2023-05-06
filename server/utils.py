@@ -1,5 +1,5 @@
 import random
-from users_database import users
+from users_data import users
 
 
 def generate_account_number():
@@ -10,3 +10,11 @@ def generate_account_number():
     while rnd_number not in account_numbers:
         rnd_number = str(random.randint(10**14, 10**15 - 1))
     return rnd_number
+
+
+def get_users_data():
+    pass
+
+
+def set_users_data():
+    pass
