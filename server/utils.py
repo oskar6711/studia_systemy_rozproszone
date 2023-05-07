@@ -13,8 +13,19 @@ def generate_account_number():
 
 
 def get_users_data():
-    pass
+    users_data = []
+    with open('users_database.txt', 'r') as file:
+        for line in file:
+            line = line.strip()
+            users_data.append(line)
+    return users_data
 
 
 def set_users_data():
-    pass
+    users_data = get_users_data()
+    with open('./users_database.txt', 'w') as file:
+        for line in users_data:
+            file.write(line + '\n')
+
+
+print(get_users_data())
