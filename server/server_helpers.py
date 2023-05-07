@@ -98,7 +98,7 @@ class ServerHelpers:
             new_source_user_balance = int(source_user_balance) - int(amount)
             new_target_user_balance = int(target_user_balance) + int(amount)
             self._set_balance(self.username, new_source_user_balance)
-            self._set_balance(self.username, new_target_user_balance)
+            self._set_balance(target, new_target_user_balance)
             return [amount, target]
         else:
             return False
