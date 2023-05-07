@@ -1,6 +1,5 @@
 import threading
-from users_data import users
-from utils import generate_account_number
+from data.users_data import users
 from server_helpers import ServerHelpers, authorize
 
 
