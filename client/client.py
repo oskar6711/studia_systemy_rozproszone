@@ -12,7 +12,7 @@ while True:
     print('Wiadomosc z serwera:', server_message.decode())
     client_message = str(input())
     client.sendall(bytes(client_message, 'UTF-8'))
-    if client_message == '' or client_message == 'wyjdz':
+    if client_message == 'wyjdz':
         break
 client.close()
 print('Rozlaczono z serwerem.')

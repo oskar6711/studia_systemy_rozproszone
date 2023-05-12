@@ -1,5 +1,5 @@
-from utils import generate_account_number
 import json
+import random
 
 
 class ServerHelpers:
@@ -17,11 +17,38 @@ class ServerHelpers:
         with open(path_to_database) as db:
             self.users_data = json.load(db)
 
+    def generate_account_number(self):
+        acc_number = str(random.randint(10**14, 10**15 - 1))
+        existing_acc_numbers = [
+            self.users_data[user]['account_number'] for user in self.users_data.keys() if user != 'admin']
+        while acc_number in existing_acc_numbers:
+            acc_number = str(random.randint(10**14, 10**15 - 1))
+        return acc_number
+
+    def _handle_received_data(self):
+        received_data = self.socket.recv(2048)
+        decoded_data = received_data.decode()
+        if decoded_data == 'powrot' or decoded_data == 'pomin':
+            return False
+        return decoded_data
+
+    def _handle_amount_data(self):
+        while True:
+            data = self._handle_received_data()
+            if not data:
+                return False
+            try:
+                data = int(data)
+                return data
+            except ValueError:
+                self._send_message(
+                    'Kwota nie moze byc tekstem, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
+
     def _send_message(self, message):
         self.socket.send(bytes(message, 'utf-8'))
 
     def _set_balance(self, username, new_balance):
-        self.users_data[username]['balance'] = new_balance
+        self.users_data[username]['balance'] = str(new_balance)
 
     def get_balance(self, username):
         return self.users_data[username]['balance']
@@ -32,17 +59,17 @@ class ServerHelpers:
         self._send_message(
             'Ile chcesz wyplacic? Jezeli chcesz wrocic, wpisz "powrot"')
         while True:
-            data = self.socket.recv(2048)
-            tmp_amount = data.decode()
-            if tmp_amount == 'powrot':
+            data = self._handle_amount_data()
+            if data:
+                if int(data) > 0 and int(user_balance) - int(data) >= 0:
+                    amount = data
+                    new_balance = int(user_balance) - int(amount)
+                    self._set_balance(self.username, new_balance)
+                    return amount
+                self._send_message(
+                    'Nieprawidlowa kwota, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
+            else:
                 return False
-            elif int(tmp_amount) > 0 and int(user_balance) - int(tmp_amount) >= 0:
-                amount = tmp_amount
-                new_balance = int(user_balance) - int(amount)
-                self._set_balance(self.username, new_balance)
-                return amount
-            self._send_message(
-                'Nieprawidlowa kwota, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
 
     def deposit(self):
         amount = 0
@@ -50,17 +77,17 @@ class ServerHelpers:
         self._send_message(
             'Ile chcesz wplacic? Jezeli chcesz wrocic, wpisz "powrot"')
         while True:
-            data = self.socket.recv(2048)
-            tmp_amount = data.decode()
-            if tmp_amount == 'powrot':
+            data = self._handle_amount_data()
+            if data:
+                if int(data) > 0:
+                    amount = data
+                    new_balance = int(user_balance) + int(amount)
+                    self._set_balance(self.username, new_balance)
+                    return amount
+                self._send_message(
+                    'Nieprawidlowa kwota, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
+            else:
                 return False
-            elif int(tmp_amount) > 0:
-                amount = tmp_amount
-                new_balance = int(user_balance) + int(amount)
-                self._set_balance(self.username, new_balance)
-                return amount
-            self._send_message(
-                'Nieprawidlowa kwota, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
 
     def _get_transfer_amount(self):
         amount = 0
@@ -69,15 +96,15 @@ class ServerHelpers:
         self._send_message(
             f'Ile pieniedzy chcesz przelac? Jezeli chcesz wrocic, wpisz "powrot"')
         while True:
-            data = self.socket.recv(2048)
-            tmp_amount = data.decode()
-            if tmp_amount == 'powrot':
+            data = self._handle_amount_data()
+            if data:
+                if int(data) > 0 and int(source_user_balance) - int(data) >= 0:
+                    amount = data
+                    return amount
+                self._send_message(
+                    'Nieprawidlowa kwota, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
+            else:
                 return False
-            elif int(tmp_amount) > 0 and int(source_user_balance) - int(tmp_amount) >= 0:
-                amount = tmp_amount
-                return amount
-            self._send_message(
-                'Nieprawidlowa kwota, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
 
     def _get_transfer_data(self):
         target_username = ''
@@ -86,15 +113,19 @@ class ServerHelpers:
             self._send_message(
                 f'Komu chcesz przelac pieniadze - {amount} zl (podaj nazwe uzytkownika)? Jezeli chcesz wrocic, wpisz "powrot"')
             while True:
-                data = self.socket.recv(2048)
-                tmp_target_username = data.decode()
-                if tmp_target_username == 'powrot':
+                data = self._handle_received_data()
+                if data:
+                    if data != self.username:
+                        if data in self.users_data and data != 'admin':
+                            target_username = data
+                            return [amount, target_username]
+                        self._send_message(
+                            'Uzytkownik nie istnieje, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
+                    else:
+                        self._send_message(
+                            'Nie mozesz przelac pieniedzy do siebie, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
+                else:
                     return False
-                elif tmp_target_username in self.users_data and tmp_target_username != 'admin':
-                    target_username = tmp_target_username
-                    return [amount, target_username]
-                self._send_message(
-                    'Uzytkownik nie istnieje, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
         return False
 
     def transfer(self):
@@ -113,7 +144,7 @@ class ServerHelpers:
             return False
 
     def _set_property(self, property_to_set):
-        """Function designed to set user properites (username, password, name, surname, pesel)"""
+        """Function designed to set new user properites (username, password, name, surname, pesel)"""
         msg = ''
 
         if property_to_set == 'username':
@@ -126,15 +157,10 @@ class ServerHelpers:
             msg = 'Podaj nazwisko uzytkownika lub jezeli chcesz wrocic, wpisz "powrot"'
         elif property_to_set == 'pesel':
             msg = 'Podaj pesel uzytkownika lub jezeli chcesz wrocic, wpisz "powrot"'
-        else:
-            raise AttributeError
 
         self._send_message(msg)
-        data = self.socket.recv(2048)
-        property = data.decode()
-        if property == 'powrot':
-            return False
-        return property
+        data = self._handle_received_data()
+        return data
 
     def create_user(self):
         username = self._set_property('username')
@@ -157,7 +183,7 @@ class ServerHelpers:
             'name': name,
             'surname': surname,
             'pesel': pesel,
-            'account_number': generate_account_number(),
+            'account_number': self.generate_account_number(),
             'balance': '0'
         }
         self.users_data[username] = new_user
@@ -177,25 +203,22 @@ class ServerHelpers:
             raise AttributeError
 
         self._send_message(msg)
-        data = self.socket.recv(2048)
-        property = data.decode()
-        if property == 'pomin':
-            return False
-        return property
+        data = self._handle_received_data()
+        return data
 
     def _get_user_to_modify(self):
         self._send_message(
             'Jakiego uzytkownika chcesz zmodyfikowac (podaj nazwe uzytkownika)? Jezeli chcesz wrocic, wpisz "powrot"')
         while True:
-            data = self.socket.recv(2048)
-            tmp_user_to_modify = data.decode()
-            if tmp_user_to_modify == 'powrot':
+            data = self._handle_received_data()
+            if data:
+                if data in self.users_data:
+                    user_to_modify = data
+                    return user_to_modify
+                self._send_message(
+                    'Podany uzytkownik nie istnieje, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
+            else:
                 return False
-            elif tmp_user_to_modify in self.users_data:
-                user_to_modify = tmp_user_to_modify
-                return user_to_modify
-            self._send_message(
-                'Podany uzytkownik nie istnieje, sprobuj jeszcze raz lub jezeli chcesz wrocic, wpisz "powrot"')
 
     def modify_user(self):
         changed = False
@@ -227,40 +250,3 @@ class ServerHelpers:
         else:
             self._send_message(
                 f'Komenda nie istnieje, wybierz jedna z: saldo | wyplata | wplata | przelew | wyjdz')
-
-
-def authorize(socket, users_data):
-    user = ['', False]
-
-    while True:
-        socket.send(
-            bytes(f'Podaj nazwe uzytkownika:', 'utf-8'))
-        while True:
-            data = socket.recv(2048)
-            tmp_username = data.decode()
-            if tmp_username in users_data:
-                user[0] = tmp_username
-                break
-            else:
-                socket.send(
-                    bytes(f'Podany uzytkownik nie istnieje, sprobuj jeszcze raz:', 'utf-8'))
-
-        socket.send(
-            bytes(f'Podaj haslo:', 'utf-8'))
-        while True:
-            data = socket.recv(2048)
-            tmp_password = data.decode()
-
-            if users_data[user[0]]['password'] == tmp_password:
-                if user[0] == 'admin':
-                    user[1] = True
-                    socket.send(
-                        bytes(f'Zalogowano jako Admin, co chcesz teraz zrobic? (nowy | modyfikuj | wyjdz)', 'utf-8'))
-                else:
-                    socket.send(
-                        bytes(f'Zalogowano jako {user[0]}, co chcesz teraz zrobic? (saldo | wyplata | wplata | przelew | wyjdz)', 'utf-8'))
-                break
-            else:
-                socket.send(
-                    bytes(f'Bledne haslo, sprobuj jeszcze raz:', 'utf-8'))
-        return user

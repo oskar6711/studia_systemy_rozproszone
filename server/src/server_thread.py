@@ -1,6 +1,7 @@
 import threading
 import json
-from server_helpers import ServerHelpers, authorize
+from server_helpers import ServerHelpers
+from authorize import authorize
 
 
 class ServerThread(threading.Thread):
@@ -38,7 +39,6 @@ class ServerThread(threading.Thread):
                 msg_to_client = f'Twoje saldo wynosi: {user_balance}'
                 print(
                     f'{thread_name} | Balans uzytkownika {username} to {user_balance}')
-                helpers.save_users_data()
 
             elif client_message == 'wyplata':
                 withdrawed_amount = helpers.withdraw()
