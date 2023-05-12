@@ -1,4 +1,5 @@
 from utils import generate_account_number
+import json
 
 
 class ServerHelpers:
@@ -7,6 +8,14 @@ class ServerHelpers:
         self.socket = socket
         self.username = username
         self.users_data = users_data
+
+    def save_users_data(self, path_to_database='./data/users_data.json'):
+        with open(path_to_database, 'w') as db:
+            json.dump(self.users_data, db)
+
+    def load_users_data(self, path_to_database='./data/users_data.json'):
+        with open(path_to_database) as db:
+            self.users_data = json.load(db)
 
     def _send_message(self, message):
         self.socket.send(bytes(message, 'utf-8'))

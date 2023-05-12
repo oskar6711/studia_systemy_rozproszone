@@ -1,5 +1,9 @@
 import random
-from data.users_data import users
+import json
+
+users = {}
+with open('./data/users_data.json') as db:
+    users = json.load(db)
 
 
 def generate_account_number():
