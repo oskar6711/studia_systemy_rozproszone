@@ -17,7 +17,7 @@ class ServerHelpers:
         with open(path_to_database) as db:
             self.users_data = json.load(db)
 
-    def generate_account_number(self):
+    def _generate_account_number(self):
         acc_number = str(random.randint(10**14, 10**15 - 1))
         existing_acc_numbers = [
             self.users_data[user]['account_number'] for user in self.users_data.keys() if user != 'admin']
@@ -28,7 +28,7 @@ class ServerHelpers:
     def _handle_received_data(self):
         received_data = self.socket.recv(2048)
         decoded_data = received_data.decode()
-        if decoded_data == 'powrot' or decoded_data == 'pomin':
+        if decoded_data == 'powrot' or decoded_data == 'pomin' or decoded_data == '':
             return False
         return decoded_data
 
@@ -183,7 +183,7 @@ class ServerHelpers:
             'name': name,
             'surname': surname,
             'pesel': pesel,
-            'account_number': self.generate_account_number(),
+            'account_number': self._generate_account_number(),
             'balance': '0'
         }
         self.users_data[username] = new_user

@@ -100,6 +100,9 @@ class ServerThread(threading.Thread):
             elif client_message == 'wyjdz' or client_message == '':
                 break
 
+            else:
+                continue
+
             helpers.send_message_to_client(msg_to_client, is_admin)
             msg_to_client = ''
 
