@@ -28,19 +28,20 @@ class ServerThread(threading.Thread):
         print(f'{thread_name} | Uzytkownik {username} zalogowal sie')
 
         while True:
-            helpers.load_users_data()
             data = self.client_socket.recv(2048)
             client_message = data.decode()
             msg_to_client = ''
             print(f'{thread_name} | Odczytana wiadomosc od klienta: {client_message}')
 
             if client_message == 'saldo':
+                helpers.load_users_data()
                 user_balance = helpers.get_balance(username)
                 msg_to_client = f'Twoje saldo wynosi: {user_balance}'
                 print(
                     f'{thread_name} | Balans uzytkownika {username} to {user_balance}')
 
             elif client_message == 'wyplata':
+                helpers.load_users_data()
                 withdrawed_amount = helpers.withdraw()
                 if withdrawed_amount:
                     print(
@@ -51,6 +52,7 @@ class ServerThread(threading.Thread):
                     msg_to_client = 'Anulowano'
 
             elif client_message == 'wplata':
+                helpers.load_users_data()
                 deposit_amount = helpers.deposit()
                 if deposit_amount:
                     print(
@@ -61,6 +63,7 @@ class ServerThread(threading.Thread):
                     msg_to_client = 'Anulowano'
 
             elif client_message == 'przelew':
+                helpers.load_users_data()
                 transfer = helpers.transfer()
                 if transfer:
                     amount = transfer[0]
@@ -73,6 +76,7 @@ class ServerThread(threading.Thread):
                     msg_to_client = 'Anulowano'
 
             elif client_message == 'nowy':
+                helpers.load_users_data()
                 if is_admin:
                     new_user = helpers.create_user()
                     if new_user:
@@ -85,6 +89,7 @@ class ServerThread(threading.Thread):
                     msg_to_client = 'Nie jestes zalogowany jako admin!'
 
             elif client_message == 'modyfikuj':
+                helpers.load_users_data()
                 if is_admin:
                     modified_user = helpers.modify_user()
                     if modified_user[1]:
@@ -99,9 +104,6 @@ class ServerThread(threading.Thread):
 
             elif client_message == 'wyjdz' or client_message == '':
                 break
-
-            else:
-                continue
 
             helpers.send_message_to_client(msg_to_client, is_admin)
             msg_to_client = ''
